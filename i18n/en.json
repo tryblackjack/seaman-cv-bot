@@ -1,0 +1,47 @@
+{
+  "language_name": "English",
+  "language_code": "en",
+  
+  "start_welcome": "👋 Welcome! I'm a CV distribution bot for seafarers.\n\nUse /start_apply to begin.",
+  "start_apply_offer": "Payment for CV distribution service: 50 EUR.",
+  "button_pay": "💳 Pay (Test)",
+  "button_admin": "🔐 Admin Access",
+  "button_change_language": "🌍 Change Language",
+  
+  "payment_invoice_title": "CV Distribution",
+  "payment_invoice_description": "Professional CV distribution service to crewing companies",
+  "payment_test_mode_skip": "⚠️ Test mode: payment skipped.",
+  "payment_success": "✅ Payment successful!",
+  
+  "enter_email": "📧 Enter your **personal Email** (crewing companies will reply to this address):",
+  "enter_password": "🔐 Enter admin password:",
+  "password_correct": "✅ Password accepted.",
+  "password_incorrect": "❌ Incorrect password.",
+  
+  "upload_cv": "📂 Upload your CV (PDF format only):",
+  "upload_cv_error": "❌ Only PDF files are accepted.",
+  "cv_received": "📄 CV received: {filename}",
+  
+  "enter_job_title": "⚓ What is your job title/rank?\n\nExample: Chief Engineer, 2nd Officer, AB, Cook",
+  "enter_preferences": "🚢 Your vessel type preferences?\n\nExamples:\n- CONTAINER\n- TANKER, OFFSHORE\n- ANY (all types)",
+  
+  "processing_start": "🚀 Starting CV distribution process...",
+  "ai_analyzing": "🤖 AI is analyzing your CV...",
+  "targets_ready": "🎯 Ready to send: {count} companies.",
+  "sending_progress": "📧 Sending {current}/{total} to {email}",
+  "test_email_sent": "📨 <b>Sent</b> ({current}/3) to {email}\n\n💬 <b>Message:</b> {body}\n📧 <b>Reply-To:</b> {reply_to}",
+  "distribution_complete": "🎉 <b>Distribution complete!</b>\nEmails sent: {sent_count}",
+  "distribution_error": "❌ Distribution error: {error}",
+  
+  "cancel": "🛑 Operation cancelled.",
+  
+  "language_select": "🌍 Select your language:\n\nCurrent: <b>{current}</b>",
+  "language_changed": "✅ Language changed to: <b>{language}</b>",
+  
+  "test_mode_info": "🧪 TEST MODE: 3 emails will be sent to {email}",
+  "excluded_company": "⏭️ Skipping {email} (current employer)",
+  
+  "ai_default_email_body": "Dear Sir/Madam,\n\nI am applying for a position. Please find my CV attached.\n\nVessel preferences: {preferences}",
+  
+  "error_general": "❌ An error occurred: {error}"
+}

@@ -1,0 +1,38 @@
+graph TB
+    Start[👤 Пользователь нажимает /start] --> DetectLang{🌍 Определение языка}
+    
+    DetectLang -->|Telegram API| GetLangCode[Получить language_code<br/>ru, uk, en, etc.]
+    GetLangCode --> CheckSupported{Язык<br/>поддерживается?}
+    
+    CheckSupported -->|Да| SetLang[Установить язык<br/>context.user_data['language']]
+    CheckSupported -->|Нет| DefaultLang[Использовать<br/>English по умолчанию]
+    
+    SetLang --> LoadTranslations[Загрузить переводы<br/>из i18n_XX.json]
+    DefaultLang --> LoadTranslations
+    
+    LoadTranslations --> ShowMenu[Показать меню<br/>на языке пользователя]
+    
+    ShowMenu --> UserAction{Действие<br/>пользователя}
+    
+    UserAction -->|/language| LanguageMenu[Показать меню<br/>выбора языка]
+    UserAction -->|Кнопка смены языка| LanguageMenu
+    UserAction -->|/start_apply| ApplyFlow[Начать процесс<br/>рассылки CV]
+    
+    LanguageMenu --> SelectLang[Выбор языка:<br/>🇬🇧 EN | 🇷🇺 RU | 🇺🇦 UK]
+    SelectLang --> UpdateLang[Обновить<br/>context.user_data['language']]
+    UpdateLang --> ConfirmLang[✅ Подтверждение<br/>смены языка]
+    ConfirmLang --> ShowMenu
+    
+    ApplyFlow --> Step1[📧 Запрос Email<br/>на выбранном языке]
+    Step1 --> Step2[📂 Запрос CV<br/>на выбранном языке]
+    Step2 --> Step3[⚓ Запрос должности<br/>на выбранном языке]
+    Step3 --> Step4[🚢 Запрос предпочтений<br/>на выбранном языке]
+    Step4 --> Processing[🚀 Процесс рассылки<br/>Уведомления на выбранном языке]
+    Processing --> Complete[🎉 Завершено!<br/>Финальное сообщение<br/>на языке пользователя]
+    
+    style Start fill:#e1f5ff
+    style DetectLang fill:#fff4e6
+    style ShowMenu fill:#e8f5e9
+    style LanguageMenu fill:#f3e5f5
+    style Complete fill:#e8f5e9
+    style Processing fill:#fff3e0
