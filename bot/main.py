@@ -255,7 +255,9 @@ async def analyze_cv_and_preferences(cv_text, user_preferences):
 async def perform_mass_apply(user_id, context, user_data):
     """Выполняет массовую рассылку CV"""
     try:
+        # ПРАВИЛЬНЫЙ порядок сообщений
         await context.bot.send_message(user_id, t(context, 'ai_analyzing'))
+        await context.bot.send_message(user_id, t(context, 'processing_start'))
 
         cv_text = extract_text_from_pdf(user_data.get('cv_path'))
         email_body, exclude_company = await analyze_cv_and_preferences(
@@ -670,7 +672,7 @@ async def save_pref(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['preferences'] = pref
     logger.info(f"🚢 Предпочтения: {pref}")
 
-    await update.message.reply_text(t(context, 'processing_start'))
+    # Сообщения о процессе теперь внутри perform_mass_apply
     await perform_mass_apply(update.message.chat_id, context, context.user_data)
 
     return ConversationHandler.END
