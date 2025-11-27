@@ -637,26 +637,6 @@ async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await update.message.reply_text(t(context, 'enter_email'), parse_mode='Markdown')
     return EMAIL
 
-async def admin_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик админ доступа"""
-    query = update.callback_query
-    await query.answer()
-    logger.info(f"🔐 Запрос админ доступа от {query.message.chat_id}")
-    await query.message.reply_text(t(context, 'enter_password'))
-    return PAYMENT
-
-async def check_passcode(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Проверка админ пароля"""
-    if update.message.text == settings.ADMIN_PASSPHRASE:
-        logger.info(f"✅ Админ доступ предоставлен {update.message.chat_id}")
-        await update.message.reply_text(t(context, 'password_correct'))
-        await update.message.reply_text(t(context, 'enter_email'), parse_mode='Markdown')
-        return EMAIL
-    else:
-        logger.warning(f"❌ Неверный пароль от {update.message.chat_id}")
-        await update.message.reply_text(t(context, 'password_incorrect'))
-        return PAYMENT
-
 async def save_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Сохранение email пользователя"""
     email = update.message.text.strip()

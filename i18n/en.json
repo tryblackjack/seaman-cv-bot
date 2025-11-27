@@ -5,7 +5,6 @@
   "start_welcome": "👋 Welcome! I'm a CV distribution bot for seafarers.\n\nUse /start_apply to begin.",
   "start_apply_offer": "Payment for CV distribution service: 50 EUR.",
   "button_pay": "💳 Pay (Test)",
-  "button_admin": "🔐 Admin Access",
   "button_change_language": "🌍 Change Language",
   "button_send_cv": "🚀 Send CV",
   "button_vacancies": "💼 Vacancies",
@@ -20,10 +19,7 @@
   "payment_success": "✅ Payment successful!",
   
   "enter_email": "📧 Enter your **personal Email** (crewing companies will reply to this address):",
-  "enter_password": "🔐 Enter admin password:",
-  "password_correct": "✅ Password accepted.",
-  "password_incorrect": "❌ Incorrect password.",
-  
+
   "upload_cv": "📂 Upload your CV (PDF format only):",
   "upload_cv_error": "❌ Only PDF files are accepted.",
   "cv_received": "📄 CV received: {filename}",
