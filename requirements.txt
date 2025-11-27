@@ -7,6 +7,9 @@ aiohttp>=3.8.0
 # PDF processing
 pypdf>=3.0.0
 
+# DOCX processing
+python-docx>=0.8.11
+
 # Firebase (optional, for production)
 firebase-admin>=6.0.0
 

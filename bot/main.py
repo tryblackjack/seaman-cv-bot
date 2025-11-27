@@ -477,19 +477,84 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_main_menu(query.message, context)
 
 async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Начало процесса подачи CV"""
+    """Начало процесса подачи CV - показываем договор оферты"""
     logger.info(f"🚀 /start_apply от пользователя {update.message.chat_id}")
 
+    # Получаем превью договора (первые 500 символов)
+    full_offer = t(context, 'offer_agreement_text')
+    preview = full_offer[:500] + "...\n\n" + t(context, 'offer_preview')
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(t(context, 'button_agree_terms'), callback_data='agree_terms')],
+        [InlineKeyboardButton(t(context, 'button_read_full'), callback_data='read_full_offer')],
+        [InlineKeyboardButton(t(context, 'cancel'), callback_data='cancel_offer')]
+    ])
+
+    await update.message.reply_text(
+        f"{t(context, 'offer_title')}\n\n{preview}",
+        reply_markup=keyboard,
+        parse_mode='HTML'
+    )
+    return OFFER
+
+async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик согласия с условиями"""
+    query = update.callback_query
+    await query.answer()
+    logger.info(f"✅ Согласие с условиями от {query.message.chat_id}")
+
+    # Показываем кнопки оплаты
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')],
         [InlineKeyboardButton(t(context, 'button_admin'), callback_data='admin')]
     ])
 
-    await update.message.reply_text(
+    await query.message.reply_text(
         t(context, 'start_apply_offer'),
         reply_markup=keyboard
     )
     return PAYMENT
+
+async def read_full_offer_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик показа полного текста договора"""
+    query = update.callback_query
+    await query.answer()
+    logger.info(f"📄 Запрос полного текста договора от {query.message.chat_id}")
+
+    # Показываем полный текст договора
+    full_offer = t(context, 'offer_agreement_text')
+
+    # Telegram ограничивает длину сообщения 4096 символов
+    # Если текст длиннее, разбиваем на части
+    max_length = 4000
+    if len(full_offer) > max_length:
+        # Разбиваем на части
+        parts = [full_offer[i:i+max_length] for i in range(0, len(full_offer), max_length)]
+        for part in parts:
+            await query.message.reply_text(part)
+    else:
+        await query.message.reply_text(full_offer)
+
+    # Показываем кнопки снова
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(t(context, 'button_agree_terms'), callback_data='agree_terms')],
+        [InlineKeyboardButton(t(context, 'cancel'), callback_data='cancel_offer')]
+    ])
+
+    await query.message.reply_text(
+        t(context, 'offer_preview'),
+        reply_markup=keyboard
+    )
+    return OFFER
+
+async def cancel_offer_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик отмены"""
+    query = update.callback_query
+    await query.answer()
+    logger.info(f"❌ Отмена процесса от {query.message.chat_id}")
+
+    await query.message.reply_text(t(context, 'cancel'))
+    return ConversationHandler.END
 
 async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик оплаты"""
@@ -616,6 +681,11 @@ def main():
     conv = ConversationHandler(
         entry_points=[CommandHandler('start_apply', start_apply)],
         states={
+            OFFER: [
+                CallbackQueryHandler(agree_terms_handler, pattern='^agree_terms$'),
+                CallbackQueryHandler(read_full_offer_handler, pattern='^read_full_offer$'),
+                CallbackQueryHandler(cancel_offer_handler, pattern='^cancel_offer$')
+            ],
             PAYMENT: [
                 CallbackQueryHandler(pay_handler, pattern='^pay$'),
                 CallbackQueryHandler(admin_handler, pattern='^admin$'),
