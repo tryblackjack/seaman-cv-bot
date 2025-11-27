@@ -444,14 +444,18 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Публикует меню бота в канале (только для админа)"""
-    logger.info(f"📢 /publish_menu от пользователя {update.message.chat_id}")
+    user_id = update.message.chat_id
+    logger.info(f"📢 /publish_menu от пользователя {user_id}")
+    logger.info(f"🔑 ADMIN_USER_IDS: {settings.ADMIN_USER_IDS}")
 
     # Проверка прав администратора
-    user_id = update.message.chat_id
     if settings.ADMIN_USER_IDS and user_id not in settings.ADMIN_USER_IDS:
-        await update.message.reply_text("❌ У вас нет прав для выполнения этой команды")
+        await update.message.reply_text(f"❌ У вас нет прав для выполнения этой команды\n\nВаш ID: {user_id}\nАдмины: {settings.ADMIN_USER_IDS}")
         logger.warning(f"⚠️ Попытка использования /publish_menu пользователем {user_id} (не админ)")
         return
+    elif not settings.ADMIN_USER_IDS:
+        logger.warning(f"⚠️ ADMIN_USER_IDS не настроен! Разрешаем /publish_menu для {user_id}")
+        await update.message.reply_text("⚠️ ADMIN_USER_IDS не настроен в .env\nДоступ разрешен, но рекомендуется настроить в продакшн")
 
     # Определяем язык для меню
     lang = get_user_language(context)
@@ -480,7 +484,7 @@ async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='HTML'
     )
 
-    logger.info("✅ Меню опубликовано в канале")
+    logger.info(f"✅ Меню опубликовано пользователем {user_id} на языке {lang}")
 
 async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик выбора языка"""
