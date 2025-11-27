@@ -1,9 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mv:*)",
-      "Bash(cp:*)",
-      "Bash(tree:*)"
+      "Bash(git push)",
+      "Bash(python -c:*)",
+      "Bash(python extract_offer.py:*)",
+      "Bash(python parse_offer_text.py:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd offer agreement flow to CV submission process\n\n- Extracted offer agreement text from Оферта_i18n.docx (RU, EN, UK)\n- Added offer agreement translations to i18n files (offer_agreement_text)\n- Added button translations: button_agree_terms, button_read_full, offer_title, offer_preview\n- Modified /start_apply flow: now shows offer agreement BEFORE payment\n- New flow: /start_apply → Offer Agreement → Agree → Payment → Email → CV → Distribution\n- Added handlers: agree_terms_handler, read_full_offer_handler, cancel_offer_handler\n- Added OFFER state to ConversationHandler with agreement workflow\n- Added python-docx to requirements.txt for docx file processing\n- Full offer text display supports Telegram''s 4096 char limit (splits if needed)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(test:*)",
+      "Bash(python -m pip:*)"
     ],
     "deny": [],
     "ask": []
