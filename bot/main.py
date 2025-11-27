@@ -614,6 +614,19 @@ async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     logger.info(f"💳 Callback: {query.data} от пользователя {query.message.chat_id}")
 
+    # Показываем инструкцию по тестовой оплате
+    test_payment_instruction = """🧪 <b>ТЕСТОВАЯ ОПЛАТА</b>
+
+Используйте тестовую карту для оплаты:
+
+💳 <b>Номер карты:</b> <code>4242 4242 4242 4242</code>
+🔒 <b>CVV:</b> <code>111</code>
+📅 <b>Дата:</b> <code>12/29</code>
+
+Сейчас откроется форма оплаты Telegram."""
+
+    await query.message.reply_text(test_payment_instruction, parse_mode='HTML')
+
     try:
         await context.bot.send_invoice(
             query.message.chat_id,
@@ -626,8 +639,8 @@ async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return PAYMENT
     except Exception as e:
-        logger.warning(f"⚠️ Ошибка тестовой оплаты: {e}. Пропускаем шаг оплаты.")
-        await query.message.reply_text(t(context, 'payment_test_mode_skip'))
+        logger.error(f"❌ Ошибка send_invoice: {e}")
+        await query.message.reply_text(f"❌ Ошибка создания платежа: {e}\n\nПропускаем оплату...")
         await query.message.reply_text(t(context, 'enter_email'), parse_mode='Markdown')
         return EMAIL
 
