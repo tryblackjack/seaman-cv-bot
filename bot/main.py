@@ -428,23 +428,7 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     query = update.callback_query
     await query.answer()
 
-    if query.data == 'start_apply':
-        # Показываем договор оферты
-        full_offer = t(context, 'offer_agreement_text')
-        preview = full_offer[:500] + "...\n\n" + t(context, 'offer_preview')
-
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(t(context, 'button_agree_terms'), callback_data='agree_terms')],
-            [InlineKeyboardButton(t(context, 'button_read_full'), callback_data='read_full_offer')],
-            [InlineKeyboardButton(t(context, 'cancel'), callback_data='cancel_offer')]
-        ])
-
-        await query.message.reply_text(
-            f"{t(context, 'offer_title')}\n\n{preview}",
-            reply_markup=keyboard,
-            parse_mode='HTML'
-        )
-    elif query.data == 'vacancies':
+    if query.data == 'vacancies':
         await query.message.reply_text("📋 Функция поиска вакансий в разработке")
     elif query.data == 'my_resume':
         await query.message.reply_text("📝 Функция управления резюме в разработке")
@@ -530,7 +514,17 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Начало процесса подачи CV - показываем договор оферты"""
-    logger.info(f"🚀 /start_apply от пользователя {update.message.chat_id}")
+    # Определяем откуда пришел запрос - команда или callback
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        user_id = query.message.chat_id
+        message = query.message
+        logger.info(f"🚀 start_apply (callback) от пользователя {user_id}")
+    else:
+        user_id = update.message.chat_id
+        message = update.message
+        logger.info(f"🚀 /start_apply от пользователя {user_id}")
 
     # Получаем превью договора (первые 500 символов)
     full_offer = t(context, 'offer_agreement_text')
@@ -542,7 +536,7 @@ async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton(t(context, 'cancel'), callback_data='cancel_offer')]
     ])
 
-    await update.message.reply_text(
+    await message.reply_text(
         f"{t(context, 'offer_title')}\n\n{preview}",
         reply_markup=keyboard,
         parse_mode='HTML'
@@ -553,7 +547,7 @@ async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Обработчик согласия с условиями"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"✅ Согласие с условиями от {query.message.chat_id}")
+    logger.info(f"✅ Callback: {query.data} от пользователя {query.message.chat_id}")
 
     # Показываем кнопку оплаты
     keyboard = InlineKeyboardMarkup([
@@ -570,7 +564,7 @@ async def read_full_offer_handler(update: Update, context: ContextTypes.DEFAULT_
     """Обработчик показа полного текста договора"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"📄 Запрос полного текста договора от {query.message.chat_id}")
+    logger.info(f"📄 Callback: {query.data} от пользователя {query.message.chat_id}")
 
     # Показываем полный текст договора
     full_offer = t(context, 'offer_agreement_text')
@@ -602,7 +596,7 @@ async def cancel_offer_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     """Обработчик отмены"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"❌ Отмена процесса от {query.message.chat_id}")
+    logger.info(f"❌ Callback: {query.data} от пользователя {query.message.chat_id}")
 
     await query.message.reply_text(t(context, 'cancel'))
     return ConversationHandler.END
@@ -611,7 +605,7 @@ async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик оплаты"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"💳 Попытка оплаты от {query.message.chat_id}")
+    logger.info(f"💳 Callback: {query.data} от пользователя {query.message.chat_id}")
 
     try:
         await context.bot.send_invoice(
@@ -713,7 +707,10 @@ def main():
 
     # Conversation Handler
     conv = ConversationHandler(
-        entry_points=[CommandHandler('start_apply', start_apply)],
+        entry_points=[
+            CommandHandler('start_apply', start_apply),
+            CallbackQueryHandler(start_apply, pattern='^start_apply$')
+        ],
         states={
             OFFER: [
                 CallbackQueryHandler(agree_terms_handler, pattern='^agree_terms$'),
@@ -737,7 +734,7 @@ def main():
     app.add_handler(CommandHandler('language', language_command))
     app.add_handler(CommandHandler('publish_menu', publish_menu))
     app.add_handler(CallbackQueryHandler(language_callback, pattern='^(change_language|lang_)'))
-    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(start_apply|vacancies|my_resume|pricing|help|support)$'))
+    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(vacancies|my_resume|pricing|help|support)$'))
     app.add_handler(conv)
     app.add_handler(PreCheckoutQueryHandler(precheckout))
 
