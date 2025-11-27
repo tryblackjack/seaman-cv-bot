@@ -85,6 +85,54 @@ def load_translations():
             logger.error(f"❌ Ошибка загрузки {lang}: {e}")
             translations[lang] = {}
 
+def load_offer_agreement():
+    """Загружает договор оферты из docx файла и добавляет в translations"""
+    global translations
+    try:
+        from docx import Document
+        doc_path = 'Оферта_i18n.docx'
+
+        if not os.path.exists(doc_path):
+            logger.warning(f"⚠️ Файл {doc_path} не найден")
+            return
+
+        doc = Document(doc_path)
+        full_text = []
+
+        for para in doc.paragraphs:
+            if para.text.strip():
+                full_text.append(para.text)
+
+        complete_text = '\n\n'.join(full_text)
+
+        # Разделяем по языкам
+        ru_marker = "🇷🇺 ДОГОВОР ПУБЛИЧНОЙ ОФЕРТЫ"
+        en_marker = "🇬🇧 PUBLIC OFFER AGREEMENT"
+        uk_marker = "🇺🇦 ДОГОВІР ПУБЛІЧНОЇ ОФЕРТИ"
+
+        ru_start = complete_text.find(ru_marker)
+        en_start = complete_text.find(en_marker)
+        uk_start = complete_text.find(uk_marker)
+
+        if ru_start != -1 and en_start != -1:
+            ru_text = complete_text[ru_start:en_start].strip()
+            translations['ru']['offer_agreement_text'] = ru_text
+
+        if en_start != -1 and uk_start != -1:
+            en_text = complete_text[en_start:uk_start].strip()
+            translations['en']['offer_agreement_text'] = en_text
+
+        if uk_start != -1:
+            uk_text = complete_text[uk_start:].strip()
+            translations['uk']['offer_agreement_text'] = uk_text
+
+        logger.info("✅ Загружен договор оферты из .docx")
+
+    except ImportError:
+        logger.error("❌ python-docx не установлен. Используйте: pip install python-docx")
+    except Exception as e:
+        logger.error(f"❌ Ошибка загрузки договора оферты: {e}")
+
 def get_user_language(context: ContextTypes.DEFAULT_TYPE) -> str:
     """Получает язык пользователя из context.user_data"""
     return context.user_data.get('language', settings.DEFAULT_LANGUAGE)
@@ -306,8 +354,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if deep_link_param == 'apply':
             # Запускаем процесс рассылки CV
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')],
-                [InlineKeyboardButton(t(context, 'button_admin'), callback_data='admin')]
+                [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')]
             ])
             await update.message.reply_text(
                 t(context, 'start_apply_offer'),
@@ -382,15 +429,20 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer()
 
     if query.data == 'start_apply':
-        # Начинаем процесс рассылки CV
+        # Показываем договор оферты
+        full_offer = t(context, 'offer_agreement_text')
+        preview = full_offer[:500] + "...\n\n" + t(context, 'offer_preview')
+
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')],
-            [InlineKeyboardButton(t(context, 'button_admin'), callback_data='admin')]
+            [InlineKeyboardButton(t(context, 'button_agree_terms'), callback_data='agree_terms')],
+            [InlineKeyboardButton(t(context, 'button_read_full'), callback_data='read_full_offer')],
+            [InlineKeyboardButton(t(context, 'cancel'), callback_data='cancel_offer')]
         ])
 
         await query.message.reply_text(
-            t(context, 'start_apply_offer'),
-            reply_markup=keyboard
+            f"{t(context, 'offer_title')}\n\n{preview}",
+            reply_markup=keyboard,
+            parse_mode='HTML'
         )
     elif query.data == 'vacancies':
         await query.message.reply_text("📋 Функция поиска вакансий в разработке")
@@ -503,10 +555,9 @@ async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
     logger.info(f"✅ Согласие с условиями от {query.message.chat_id}")
 
-    # Показываем кнопки оплаты
+    # Показываем кнопку оплаты
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')],
-        [InlineKeyboardButton(t(context, 'button_admin'), callback_data='admin')]
+        [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')]
     ])
 
     await query.message.reply_text(
@@ -673,6 +724,9 @@ def main():
     # Загружаем переводы
     load_translations()
 
+    # Загружаем договор оферты из docx
+    load_offer_agreement()
+
     logger.info(f"📊 База данных: {db_manager.count()} компаний")
 
     app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
@@ -688,9 +742,7 @@ def main():
             ],
             PAYMENT: [
                 CallbackQueryHandler(pay_handler, pattern='^pay$'),
-                CallbackQueryHandler(admin_handler, pattern='^admin$'),
-                MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, check_passcode)
+                MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment)
             ],
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_email)],
             UPLOAD: [MessageHandler(filters.Document.ALL, save_cv)],
