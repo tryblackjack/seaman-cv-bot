@@ -13,6 +13,10 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8499683122:AAEDPGuQLF2tXd_Cn4LXPXgaRf7mzXoa03o")
 PAYMENT_PROVIDER_TOKEN = os.getenv("PAYMENT_PROVIDER_TOKEN", "1661751239:TEST:g7PE-C0FV-YcY1-ZgO7")
 ADMIN_PASSPHRASE = os.getenv("ADMIN_PASSPHRASE", "CaptainPass123")
+BOT_USERNAME = os.getenv("BOT_USERNAME", "OnlyOffshore_bot")
+
+# Список ID пользователей с правами администратора (можно добавить в .env через запятую)
+ADMIN_USER_IDS = [int(x.strip()) for x in os.getenv("ADMIN_USER_IDS", "").split(",") if x.strip()]
 
 # =================================================================
 # EMAIL НАСТРОЙКИ

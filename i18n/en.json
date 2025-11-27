@@ -7,6 +7,12 @@
   "button_pay": "💳 Pay (Test)",
   "button_admin": "🔐 Admin Access",
   "button_change_language": "🌍 Change Language",
+  "button_send_cv": "🚀 Send CV",
+  "button_vacancies": "💼 Vacancies",
+  "button_my_resume": "📝 My Resume",
+  "button_tariffs": "💰 Pricing",
+  "button_help": "ℹ️ Help",
+  "button_support": "📞 Support",
   
   "payment_invoice_title": "CV Distribution",
   "payment_invoice_description": "Professional CV distribution service to crewing companies",
@@ -37,6 +43,8 @@
   
   "language_select": "🌍 Select your language:\n\nCurrent: <b>{current}</b>",
   "language_changed": "✅ Language changed to: <b>{language}</b>",
+  "main_menu": "📋 <b>Main Menu</b>\n\nChoose an action:",
+  "channel_menu_post": "🌊 MARITIME JOB SEARCH 🌊\n\n📧 We'll send your CV to 1583 crewing companies!\n🤖 AI will create a personalized cover letter\n⚡ Fast and professional\n💰 Price: 50 EUR\n\nChoose an action:",
   
   "test_mode_info": "🧪 TEST MODE: 3 emails will be sent to {email}",
   "excluded_company": "⏭️ Skipping {email} (current employer)",

@@ -7,6 +7,12 @@
   "button_pay": "💳 Оплатити (Тест)",
   "button_admin": "🔐 Адмін доступ",
   "button_change_language": "🌍 Змінити мову",
+  "button_send_cv": "🚀 Розіслати CV",
+  "button_vacancies": "💼 Вакансії",
+  "button_my_resume": "📝 Моє резюме",
+  "button_tariffs": "💰 Тарифи",
+  "button_help": "ℹ️ Допомога",
+  "button_support": "📞 Підтримка",
   
   "payment_invoice_title": "Розсилка CV",
   "payment_invoice_description": "Професійна розсилка CV до крюїнгових компаній",
@@ -37,6 +43,8 @@
   
   "language_select": "🌍 Оберіть вашу мову:\n\nПоточна: <b>{current}</b>",
   "language_changed": "✅ Мову змінено на: <b>{language}</b>",
+  "main_menu": "📋 <b>Головне меню</b>\n\nОберіть дію:",
+  "channel_menu_post": "🌊 ПОШУК РОБОТИ НА СУДНАХ 🌊\n\n📧 Розішлемо ваше CV до 1583 крюїнгів!\n🤖 AI створить персональний cover letter\n⚡ Швидко та професійно\n💰 Вартість: 50 EUR\n\nОберіть дію:",
   
   "test_mode_info": "🧪 ТЕСТОВИЙ РЕЖИМ: 3 листи будуть відправлені на {email}",
   "excluded_company": "⏭️ Пропуск {email} (поточний роботодавець)",

@@ -291,20 +291,55 @@ async def perform_mass_apply(user_id, context, user_data):
 (OFFER, PAYMENT, EMAIL, UPLOAD, ROLE, PREF, LANGUAGE_SELECT) = range(7)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /start с автоопределением языка"""
+    """Обработчик команды /start с автоопределением языка и поддержкой deep links"""
     logger.info(f"👤 /start от пользователя {update.message.chat_id}")
 
     detected_lang = detect_language_from_telegram(update)
     set_user_language(context, detected_lang)
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(t(context, 'button_change_language'), callback_data='change_language')]
-    ])
+    # Проверяем наличие deep link параметра
+    if context.args and len(context.args) > 0:
+        deep_link_param = context.args[0]
+        logger.info(f"🔗 Deep link параметр: {deep_link_param}")
 
-    await update.message.reply_text(
-        t(context, 'start_welcome'),
-        reply_markup=keyboard
-    )
+        # Обработка deep link параметров
+        if deep_link_param == 'apply':
+            # Запускаем процесс рассылки CV
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')],
+                [InlineKeyboardButton(t(context, 'button_admin'), callback_data='admin')]
+            ])
+            await update.message.reply_text(
+                t(context, 'start_apply_offer'),
+                reply_markup=keyboard
+            )
+            return
+        elif deep_link_param == 'vacancies':
+            await update.message.reply_text("📋 Функция поиска вакансий в разработке")
+            await show_main_menu(update.message, context)
+            return
+        elif deep_link_param == 'resume':
+            await update.message.reply_text("📝 Функция управления резюме в разработке")
+            await show_main_menu(update.message, context)
+            return
+        elif deep_link_param == 'pricing':
+            await update.message.reply_text("💰 Функция просмотра тарифов в разработке")
+            await show_main_menu(update.message, context)
+            return
+        elif deep_link_param == 'help':
+            await update.message.reply_text("ℹ️ Функция помощи в разработке")
+            await show_main_menu(update.message, context)
+            return
+        elif deep_link_param == 'support':
+            await update.message.reply_text("📞 Функция поддержки в разработке")
+            await show_main_menu(update.message, context)
+            return
+
+    # Обычный запуск без deep link
+    await update.message.reply_text(t(context, 'start_welcome'))
+
+    # Показываем главное меню
+    await show_main_menu(update.message, context)
 
 async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда /language для смены языка"""
@@ -322,6 +357,91 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
         parse_mode='HTML'
     )
+
+async def show_main_menu(message, context: ContextTypes.DEFAULT_TYPE):
+    """Показывает главное меню с основными функциями бота"""
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(t(context, 'button_send_cv'), callback_data='start_apply')],
+        [InlineKeyboardButton(t(context, 'button_vacancies'), callback_data='vacancies')],
+        [InlineKeyboardButton(t(context, 'button_my_resume'), callback_data='my_resume')],
+        [InlineKeyboardButton(t(context, 'button_tariffs'), callback_data='pricing')],
+        [InlineKeyboardButton(t(context, 'button_help'), callback_data='help')],
+        [InlineKeyboardButton(t(context, 'button_support'), callback_data='support')],
+        [InlineKeyboardButton(t(context, 'button_change_language'), callback_data='change_language')]
+    ])
+
+    await message.reply_text(
+        t(context, 'main_menu'),
+        reply_markup=keyboard,
+        parse_mode='HTML'
+    )
+
+async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик кнопок главного меню"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == 'start_apply':
+        # Начинаем процесс рассылки CV
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')],
+            [InlineKeyboardButton(t(context, 'button_admin'), callback_data='admin')]
+        ])
+
+        await query.message.reply_text(
+            t(context, 'start_apply_offer'),
+            reply_markup=keyboard
+        )
+    elif query.data == 'vacancies':
+        await query.message.reply_text("📋 Функция поиска вакансий в разработке")
+    elif query.data == 'my_resume':
+        await query.message.reply_text("📝 Функция управления резюме в разработке")
+    elif query.data == 'pricing':
+        await query.message.reply_text("💰 Функция просмотра тарифов в разработке")
+    elif query.data == 'help':
+        await query.message.reply_text("ℹ️ Функция помощи в разработке")
+    elif query.data == 'support':
+        await query.message.reply_text("📞 Функция поддержки в разработке")
+
+async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Публикует меню бота в канале (только для админа)"""
+    logger.info(f"📢 /publish_menu от пользователя {update.message.chat_id}")
+
+    # Проверка прав администратора
+    user_id = update.message.chat_id
+    if settings.ADMIN_USER_IDS and user_id not in settings.ADMIN_USER_IDS:
+        await update.message.reply_text("❌ У вас нет прав для выполнения этой команды")
+        logger.warning(f"⚠️ Попытка использования /publish_menu пользователем {user_id} (не админ)")
+        return
+
+    # Определяем язык для меню
+    lang = get_user_language(context)
+
+    # Создаем клавиатуру с кнопками (2 колонки)
+    bot_username = settings.BOT_USERNAME
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(t(context, 'button_send_cv'), url=f'https://t.me/{bot_username}?start=apply'),
+            InlineKeyboardButton(t(context, 'button_vacancies'), url=f'https://t.me/{bot_username}?start=vacancies')
+        ],
+        [
+            InlineKeyboardButton(t(context, 'button_my_resume'), url=f'https://t.me/{bot_username}?start=resume'),
+            InlineKeyboardButton(t(context, 'button_tariffs'), url=f'https://t.me/{bot_username}?start=pricing')
+        ],
+        [
+            InlineKeyboardButton(t(context, 'button_help'), url=f'https://t.me/{bot_username}?start=help'),
+            InlineKeyboardButton(t(context, 'button_support'), url=f'https://t.me/{bot_username}?start=support')
+        ]
+    ])
+
+    # Публикуем красивый пост
+    await update.message.reply_text(
+        t(context, 'channel_menu_post'),
+        reply_markup=keyboard,
+        parse_mode='HTML'
+    )
+
+    logger.info("✅ Меню опубликовано в канале")
 
 async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик выбора языка"""
@@ -352,6 +472,9 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             t(context, 'language_changed', language=lang_name),
             parse_mode='HTML'
         )
+
+        # Показываем главное меню на новом языке
+        await show_main_menu(query.message, context)
 
 async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Начало процесса подачи CV"""
@@ -510,7 +633,9 @@ def main():
     # Handlers
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('language', language_command))
+    app.add_handler(CommandHandler('publish_menu', publish_menu))
     app.add_handler(CallbackQueryHandler(language_callback, pattern='^(change_language|lang_)'))
+    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(start_apply|vacancies|my_resume|pricing|help|support)$'))
     app.add_handler(conv)
     app.add_handler(PreCheckoutQueryHandler(precheckout))
 
