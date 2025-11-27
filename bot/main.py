@@ -429,17 +429,18 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """Обработчик кнопок главного меню"""
     query = update.callback_query
     await query.answer()
+    logger.info(f"📋 Callback: {query.data} от пользователя {query.message.chat_id}")
 
     if query.data == 'vacancies':
-        await query.message.reply_text("📋 Функция поиска вакансий в разработке")
+        await query.message.reply_text("📋 Функция поиска вакансий в разработке\n\nСкоро здесь будут актуальные вакансии для моряков!")
     elif query.data == 'my_resume':
-        await query.message.reply_text("📝 Функция управления резюме в разработке")
+        await query.message.reply_text("📝 Функция управления резюме в разработке\n\nСкоро вы сможете сохранять и редактировать свои резюме!")
     elif query.data == 'pricing':
-        await query.message.reply_text("💰 Функция просмотра тарифов в разработке")
+        await query.message.reply_text("💰 <b>Тарифы</b>\n\n🚀 Рассылка CV: 50 EUR\n📧 1583 крюинговых компаний\n🤖 AI персонализация\n⚡ До 24 часов", parse_mode='HTML')
     elif query.data == 'help':
-        await query.message.reply_text("ℹ️ Функция помощи в разработке")
+        await query.message.reply_text("ℹ️ <b>Помощь</b>\n\n1️⃣ Нажмите '🚀 Разослать CV'\n2️⃣ Согласитесь с договором\n3️⃣ Оплатите услугу\n4️⃣ Загрузите CV и укажите предпочтения\n\nВопросы? Напишите в поддержку!", parse_mode='HTML')
     elif query.data == 'support':
-        await query.message.reply_text("📞 Функция поддержки в разработке")
+        await query.message.reply_text("📞 <b>Поддержка</b>\n\n📧 Email: support@example.com\n💬 Telegram: @support\n\nРежим работы: 24/7", parse_mode='HTML')
 
 async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Публикует меню бота в канале (только для админа)"""
