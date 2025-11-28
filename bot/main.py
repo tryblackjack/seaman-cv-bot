@@ -360,34 +360,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Обработка deep link параметров
         if deep_link_param == 'apply':
             # Запускаем процесс рассылки CV
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')]
-            ])
-            await update.message.reply_text(
-                t(context, 'start_apply_offer'),
-                reply_markup=keyboard
-            )
-            return
+            return await start_apply(update, context)
         elif deep_link_param == 'vacancies':
-            await update.message.reply_text("📋 Функция поиска вакансий в разработке")
-            await show_main_menu(update.message, context)
-            return
+            # Показываем вакансии
+            return await vacancies_command(update, context)
         elif deep_link_param == 'resume':
-            await update.message.reply_text("📝 Функция управления резюме в разработке")
-            await show_main_menu(update.message, context)
-            return
+            # Показываем резюме пользователя
+            return await resume_command(update, context)
         elif deep_link_param == 'pricing':
-            await update.message.reply_text("💰 Функция просмотра тарифов в разработке")
-            await show_main_menu(update.message, context)
-            return
+            # Показываем тарифы
+            return await pricing_command(update, context)
         elif deep_link_param == 'help':
-            await update.message.reply_text("ℹ️ Функция помощи в разработке")
-            await show_main_menu(update.message, context)
-            return
+            # Показываем помощь
+            return await help_command(update, context)
         elif deep_link_param == 'support':
-            await update.message.reply_text("📞 Функция поддержки в разработке")
-            await show_main_menu(update.message, context)
-            return
+            # Показываем поддержку
+            return await support_command(update, context)
 
     # Обычный запуск без deep link
     await update.message.reply_text(t(context, 'start_welcome'))
