@@ -432,7 +432,10 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer()
     logger.info(f"📋 Callback: {query.data} от пользователя {query.message.chat_id}")
 
-    if query.data == 'vacancies':
+    if query.data == 'back_to_menu':
+        # Кнопка "🔙 Назад в меню" - показываем главное меню
+        await show_main_menu(query.message, context)
+    elif query.data == 'vacancies':
         # Кнопка "💼 Вакансии" - показываем информацию о канале с вакансиями
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(t(context, 'button_open_vacancies_channel'), url='https://t.me/OnlyOffshore')]
@@ -480,7 +483,14 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     elif query.data == 'pricing':
         await query.message.reply_text("💰 <b>Тарифы</b>\n\n🚀 Рассылка CV: 50 EUR\n📧 1583 крюинговых компаний\n🤖 AI персонализация\n⚡ До 24 часов", parse_mode='HTML')
     elif query.data == 'help':
-        await query.message.reply_text("ℹ️ <b>Помощь</b>\n\n1️⃣ Нажмите '🚀 Разослать CV'\n2️⃣ Согласитесь с договором\n3️⃣ Оплатите услугу\n4️⃣ Загрузите CV и укажите предпочтения\n\nВопросы? Напишите в поддержку!", parse_mode='HTML')
+        # Кнопка "ℹ️ Помощь" - показываем FAQ с кнопкой "Назад в меню"
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(t(context, 'button_back_to_menu'), callback_data='back_to_menu')]
+        ])
+        await query.message.reply_text(
+            t(context, 'help_faq'),
+            reply_markup=keyboard
+        )
     elif query.data == 'support':
         await query.message.reply_text("📞 <b>Поддержка</b>\n\n📧 Email: support@example.com\n💬 Telegram: @support\n\nРежим работы: 24/7", parse_mode='HTML')
 
@@ -802,7 +812,7 @@ def main():
     app.add_handler(CommandHandler('language', language_command))
     app.add_handler(CommandHandler('publish_menu', publish_menu))
     app.add_handler(CallbackQueryHandler(language_callback, pattern='^(change_language|lang_)'))
-    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(vacancies|my_resume|pricing|help|support)$'))
+    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(vacancies|my_resume|pricing|help|support|back_to_menu)$'))
     app.add_handler(conv)
     app.add_handler(PreCheckoutQueryHandler(precheckout))
 
