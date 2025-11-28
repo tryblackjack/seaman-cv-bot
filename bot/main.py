@@ -481,7 +481,14 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 reply_markup=keyboard
             )
     elif query.data == 'pricing':
-        await query.message.reply_text("💰 <b>Тарифы</b>\n\n🚀 Рассылка CV: 50 EUR\n📧 1583 крюинговых компаний\n🤖 AI персонализация\n⚡ До 24 часов", parse_mode='HTML')
+        # Кнопка "💰 Тарифы" - показываем подробную информацию о тарифах
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(t(context, 'button_back_to_menu'), callback_data='back_to_menu')]
+        ])
+        await query.message.reply_text(
+            t(context, 'pricing_message'),
+            reply_markup=keyboard
+        )
     elif query.data == 'help':
         # Кнопка "ℹ️ Помощь" - показываем FAQ с кнопкой "Назад в меню"
         keyboard = InlineKeyboardMarkup([

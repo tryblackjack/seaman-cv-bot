@@ -27,6 +27,8 @@
   "support_message": "💬 CUSTOMER SUPPORT\n\nHave questions? Contact us:\n\n• Telegram support group\n• We respond within 24 hours\n• Support in Russian, English, Ukrainian\n\nOr message the bot - admin will see your message.",
   "button_open_support": "💬 Open support",
 
+  "pricing_message": "💰 PRICING\n\n📧 Basic Distribution - 50 EUR\n✓ 1583 crewing companies worldwide\n✓ AI-generated personalized cover letter\n✓ Professional email formatting\n✓ Delivery time: up to 24 hours\n✓ One payment = one distribution\n\n🔜 Coming soon:\n• Premium subscription - unlimited distributions\n• VIP plan - personal HR manager\n\n💳 Payment via Telegram Payments (secure)",
+
   "payment_invoice_title": "CV Distribution",
   "payment_invoice_description": "Professional CV distribution service to crewing companies",
   "payment_test_mode_skip": "⚠️ Test mode: payment skipped.",
