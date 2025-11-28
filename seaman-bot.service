@@ -1,0 +1,15 @@
+[Unit]
+Description=Seaman CV Distribution Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/seaman_bot
+Environment="PATH=/opt/seaman_bot/venv/bin"
+ExecStart=/opt/seaman_bot/venv/bin/python /opt/seaman_bot/bot/main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

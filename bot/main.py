@@ -902,6 +902,16 @@ def main():
     logger.info("🤖 ЗАПУСК БОТА (МОДУЛЬНАЯ ВЕРСИЯ)")
     logger.info("=" * 50)
 
+    # Проверка критических переменных окружения
+    if not settings.TELEGRAM_BOT_TOKEN or settings.TELEGRAM_BOT_TOKEN == "your_bot_token_here":
+        logger.error("❌ ОШИБКА: TELEGRAM_BOT_TOKEN не установлен в .env файле!")
+        logger.error("Создайте .env файл и добавьте: TELEGRAM_BOT_TOKEN=ваш_токен")
+        sys.exit(1)
+
+    if not settings.GMAIL_APP_PASSWORD or settings.GMAIL_APP_PASSWORD == "your_app_password_here":
+        logger.warning("⚠️ WARNING: GMAIL_APP_PASSWORD не установлен в .env файле!")
+        logger.warning("Email рассылка не будет работать. Добавьте в .env: GMAIL_APP_PASSWORD=ваш_пароль")
+
     # Загружаем переводы
     load_translations()
 
