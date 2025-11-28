@@ -82,10 +82,18 @@ class EmailSender:
             True если успешно отправлено
         """
         try:
+            logger.info(f"📧 Начинаю отправку письма на {target_email}")
+            logger.info(f"📧 Тема: {subject}")
+            logger.info(f"📧 Reply-To: {reply_to}")
+            logger.info(f"📧 CV файл: {cv_path if cv_path else 'Нет'}")
             msg = MIMEMultipart()
 
             # Настройка отправителя
             if self.use_gmail:
+                if not self.gmail_address or not self.gmail_app_password:
+                    logger.error("❌ GMAIL_ADDRESS или GMAIL_APP_PASSWORD не настроены!")
+                    return False
+
                 msg['From'] = self.gmail_address
                 if reply_to:
                     msg['Reply-To'] = reply_to
@@ -93,6 +101,8 @@ class EmailSender:
                 smtp_port = 587
                 smtp_user = self.gmail_address
                 smtp_pass = self.gmail_app_password
+                logger.info(f"📧 Используем Gmail SMTP: {smtp_server}:{smtp_port}")
+                logger.info(f"📧 Gmail адрес: {self.gmail_address}")
             else:
                 msg['From'] = self.smtp_username
                 if reply_to:
@@ -118,21 +128,37 @@ class EmailSender:
                     msg.attach(attach)
 
             # Отправка
+            logger.info(f"📧 Подключаемся к SMTP серверу {smtp_server}:{smtp_port}")
             if self.use_gmail:
                 server = smtplib.SMTP(smtp_server, smtp_port)
                 server.starttls()
+                logger.info("📧 STARTTLS успешно")
             else:
                 server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+                logger.info("📧 SSL подключение успешно")
 
+            logger.info("📧 Выполняем login...")
             server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-            server.quit()
+            logger.info("📧 Login успешен")
 
+            logger.info("📧 Отправляем сообщение...")
+            server.send_message(msg)
+            logger.info("📧 Сообщение отправлено")
+
+            server.quit()
             logger.info(f"✅ Email отправлен на {target_email}")
             return True
 
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"❌ Ошибка аутентификации SMTP: {e}")
+            logger.error("Проверьте GMAIL_ADDRESS и GMAIL_APP_PASSWORD в .env файле!")
+            return False
+        except smtplib.SMTPException as e:
+            logger.error(f"❌ SMTP ошибка при отправке на {target_email}: {e}")
+            return False
         except Exception as e:
-            logger.error(f"❌ Ошибка отправки на {target_email}: {e}")
+            logger.error(f"❌ Общая ошибка отправки на {target_email}: {e}")
+            logger.exception("Детали ошибки:")
             return False
 
     def send_sendgrid(

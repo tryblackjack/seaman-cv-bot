@@ -20,7 +20,9 @@ from telegram import (
     InlineKeyboardMarkup,
     LabeledPrice,
     BotCommand,
-    MenuButtonCommands
+    MenuButtonCommands,
+    ReplyKeyboardMarkup,
+    KeyboardButton
 )
 from telegram.ext import (
     Application,
@@ -411,25 +413,65 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def show_main_menu(message, context: ContextTypes.DEFAULT_TYPE):
-    """Показывает главное меню с основными функциями бота"""
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(t(context, 'button_send_cv'), callback_data='start_apply')],
-        [InlineKeyboardButton(t(context, 'button_vacancies'), callback_data='vacancies')],
-        [InlineKeyboardButton(t(context, 'button_my_resume'), callback_data='my_resume')],
-        [InlineKeyboardButton(t(context, 'button_tariffs'), callback_data='pricing')],
-        [InlineKeyboardButton(t(context, 'button_help'), callback_data='help')],
-        [InlineKeyboardButton(t(context, 'button_support'), callback_data='support')],
-        [InlineKeyboardButton(t(context, 'button_change_language'), callback_data='change_language')]
-    ])
+    """Показывает главное меню с основными функциями бота (ReplyKeyboard кнопки внизу экрана)"""
+    keyboard = [
+        [KeyboardButton(t(context, 'button_send_cv')), KeyboardButton(t(context, 'button_vacancies'))],
+        [KeyboardButton(t(context, 'button_my_resume')), KeyboardButton(t(context, 'button_tariffs'))],
+        [KeyboardButton(t(context, 'button_help')), KeyboardButton(t(context, 'button_support'))],
+        [KeyboardButton(t(context, 'button_change_language'))]
+    ]
+
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,  # Автоматически подстраивает размер кнопок
+        one_time_keyboard=False  # Клавиатура остается после нажатия
+    )
 
     await message.reply_text(
         t(context, 'main_menu'),
-        reply_markup=keyboard,
+        reply_markup=reply_markup,
         parse_mode='HTML'
     )
 
+async def menu_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик нажатий на ReplyKeyboard кнопки главного меню"""
+    text = update.message.text
+    logger.info(f"📋 Нажата кнопка меню: '{text}' от пользователя {update.message.chat_id}")
+
+    # Получаем тексты кнопок на текущем языке
+    button_send_cv = t(context, 'button_send_cv')
+    button_vacancies = t(context, 'button_vacancies')
+    button_my_resume = t(context, 'button_my_resume')
+    button_tariffs = t(context, 'button_tariffs')
+    button_help = t(context, 'button_help')
+    button_support = t(context, 'button_support')
+    button_change_language = t(context, 'button_change_language')
+
+    # Обработка нажатий
+    if text == button_send_cv:
+        # "🚀 Разослать CV"
+        await start_apply(update, context)
+    elif text == button_vacancies:
+        # "💼 Вакансии"
+        await vacancies_command(update, context)
+    elif text == button_my_resume:
+        # "📝 Мое резюме"
+        await resume_command(update, context)
+    elif text == button_tariffs:
+        # "💰 Тарифы"
+        await pricing_command(update, context)
+    elif text == button_help:
+        # "ℹ️ Помощь"
+        await help_command(update, context)
+    elif text == button_support:
+        # "📞 Поддержка"
+        await support_command(update, context)
+    elif text == button_change_language:
+        # "🌍 Сменить язык"
+        await language_command(update, context)
+
 async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик кнопок главного меню"""
+    """Обработчик кнопок главного меню (для InlineKeyboard в старых сообщениях)"""
     query = update.callback_query
     await query.answer()
     logger.info(f"📋 Callback: {query.data} от пользователя {query.message.chat_id}")
@@ -963,6 +1005,9 @@ def main():
     app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(vacancies|my_resume|pricing|help|support|back_to_menu)$'))
     app.add_handler(conv)
     app.add_handler(PreCheckoutQueryHandler(precheckout))
+
+    # MessageHandler для ReplyKeyboard кнопок меню (должен быть ПОСЛЕ conv)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, menu_button_handler))
 
     logger.info("✅ Бот запущен с поддержкой языков: EN, RU, UK")
     logger.info(f"🧪 Режим: {'TEST' if settings.TEST_MODE else 'PRODUCTION'}")
