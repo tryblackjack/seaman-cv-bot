@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Модуль для отправки email через SMTP или SendGrid
+Модуль для отправки email через SMTP, SendGrid или Gmail OAuth2
 """
 import os
 import smtplib
@@ -11,6 +11,14 @@ from email.mime.application import MIMEApplication
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+# Попытка импортировать Gmail OAuth2
+try:
+    from .gmail_oauth import send_email_oauth
+    GMAIL_OAUTH_AVAILABLE = True
+except ImportError:
+    GMAIL_OAUTH_AVAILABLE = False
+    logger.info("Gmail OAuth2 не доступен")
 
 try:
     from sendgrid import SendGridAPIClient
@@ -231,6 +239,42 @@ class EmailSender:
             logger.error(f"❌ Ошибка SendGrid для {target_email}: {e}")
             return False
 
+    def send_oauth(
+        self,
+        target_email: str,
+        subject: str,
+        body: str,
+        applicant_email: str,
+        cv_path: Optional[str] = None,
+        sender_email: str = 'office@onlyoffshore.biz'
+    ) -> bool:
+        """
+        Отправка email через Gmail OAuth2 с Reply-To на соискателя
+
+        Args:
+            target_email: Email получателя (крюинг)
+            subject: Тема письма
+            body: Текст письма
+            applicant_email: Email соискателя (для Reply-To)
+            cv_path: Путь к CV файлу (опционально)
+            sender_email: Email отправителя
+
+        Returns:
+            True если успешно отправлено
+        """
+        if not GMAIL_OAUTH_AVAILABLE:
+            logger.error("❌ Gmail OAuth2 не доступен")
+            return False
+
+        return send_email_oauth(
+            target_email=target_email,
+            subject=subject,
+            body=body,
+            sender_email=sender_email,
+            reply_to_email=applicant_email,
+            cv_path=cv_path
+        )
+
     def send(
         self,
         target_email: str,
@@ -238,7 +282,9 @@ class EmailSender:
         body: str,
         cv_path: Optional[str] = None,
         reply_to: Optional[str] = None,
-        use_sendgrid: bool = False
+        applicant_email: Optional[str] = None,
+        use_sendgrid: bool = False,
+        use_oauth: bool = True
     ) -> bool:
         """
         Отправка email (автоматический выбор метода)
@@ -248,19 +294,30 @@ class EmailSender:
             subject: Тема письма
             body: Текст письма
             cv_path: Путь к CV файлу (опционально)
-            reply_to: Reply-To адрес
+            reply_to: Reply-To адрес (deprecated, используйте applicant_email)
+            applicant_email: Email соискателя для Reply-To
             use_sendgrid: Принудительно использовать SendGrid
+            use_oauth: Использовать Gmail OAuth2 (по умолчанию True)
 
         Returns:
             True если успешно отправлено
         """
-        if use_sendgrid and self.sendgrid_api_key and SENDGRID_AVAILABLE:
+        # Приоритет OAuth2 если доступен
+        if use_oauth and GMAIL_OAUTH_AVAILABLE and applicant_email:
+            return self.send_oauth(
+                target_email=target_email,
+                subject=subject,
+                body=body,
+                applicant_email=applicant_email,
+                cv_path=cv_path
+            )
+        elif use_sendgrid and self.sendgrid_api_key and SENDGRID_AVAILABLE:
             return self.send_sendgrid(
                 target_email,
                 subject,
                 body,
                 cv_path,
-                reply_to
+                reply_to or applicant_email
             )
         else:
             return self.send_smtp(
@@ -268,5 +325,5 @@ class EmailSender:
                 subject,
                 body,
                 cv_path,
-                reply_to
+                reply_to or applicant_email
             )

@@ -298,6 +298,9 @@ async def perform_mass_apply(user_id, context, user_data):
 
         sent_count = 0
 
+        # Добавляем контакты соискателя в тело письма как резерв
+        email_body_with_contact = f"{email_body}\n\n---\nApplicant Contact: {user_data['email']}"
+
         for i, email in enumerate(targets):
             logger.info(f"📧 Отправка {i+1}/{len(targets)} на {email}")
 
@@ -305,9 +308,10 @@ async def perform_mass_apply(user_id, context, user_data):
                 email_sender.send,
                 target_email=email,
                 subject=f"CV Application: {user_data.get('job_title', 'Seafarer')}",
-                body=email_body,
+                body=email_body_with_contact,
                 cv_path=user_data['cv_path'],
-                reply_to=user_data['email']
+                reply_to=user_data['email'],
+                applicant_email=user_data['email']  # Для OAuth2 Reply-To
             )
 
             if sent:
@@ -318,7 +322,7 @@ async def perform_mass_apply(user_id, context, user_data):
                         t(context, 'test_email_sent',
                           current=i+1,
                           email=email,
-                          body=email_body[:80],
+                          body=email_body_with_contact[:100],
                           reply_to=user_data['email']),
                         parse_mode='HTML'
                     )

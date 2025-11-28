@@ -18,3 +18,8 @@ python-dotenv>=1.0.0
 
 # Email (built-in, no need to install)
 # smtplib - standard library
+
+# Google OAuth2 for Gmail API
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.108.0
