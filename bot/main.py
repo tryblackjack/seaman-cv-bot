@@ -1007,6 +1007,10 @@ async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def post_init(application: Application):
     """Настройка Menu Button и команд бота после инициализации"""
     try:
+        logger.info("=" * 60)
+        logger.info("🎛️  НАСТРОЙКА BOT MENU BUTTON И КОМАНД")
+        logger.info("=" * 60)
+
         # Устанавливаем команды бота
         commands = [
             BotCommand("start", "🏠 Главное меню"),
@@ -1020,13 +1024,16 @@ async def post_init(application: Application):
         ]
 
         await application.bot.set_my_commands(commands)
-        logger.info("✅ Команды бота установлены")
+        logger.info(f"✅ Установлено {len(commands)} команд бота")
+        for cmd in commands:
+            logger.info(f"   /{cmd.command} - {cmd.description}")
 
         # Устанавливаем Menu Button (кнопка "Меню" слева внизу)
         await application.bot.set_chat_menu_button(
             menu_button=MenuButtonCommands()
         )
-        logger.info("✅ Menu Button установлен")
+        logger.info("✅ Menu Button установлен (кнопка слева внизу)")
+        logger.info("=" * 60)
 
     except Exception as e:
         logger.warning(f"⚠️ Ошибка настройки Menu Button/Commands: {e}")
