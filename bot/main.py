@@ -492,7 +492,15 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=keyboard
         )
     elif query.data == 'support':
-        await query.message.reply_text("📞 <b>Поддержка</b>\n\n📧 Email: support@example.com\n💬 Telegram: @support\n\nРежим работы: 24/7", parse_mode='HTML')
+        # Кнопка "📞 Поддержка" - показываем информацию о поддержке с кнопкой открытия группы
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(t(context, 'button_open_support'), url='https://t.me/SUPPORT_GROUP')],
+            [InlineKeyboardButton(t(context, 'button_back_to_menu'), callback_data='back_to_menu')]
+        ])
+        await query.message.reply_text(
+            t(context, 'support_message'),
+            reply_markup=keyboard
+        )
 
 async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Публикует меню бота в канале (только для админа)"""

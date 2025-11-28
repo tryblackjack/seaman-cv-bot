@@ -24,6 +24,9 @@
   "help_faq": "❓ FREQUENTLY ASKED QUESTIONS\n\n❔ How does the service work?\n• Upload CV in PDF format\n• AI creates personalized cover letter\n• We send to 1583 crewing companies\n\n❔ How much does it cost?\n• 50 EUR per distribution\n\n❔ When will I get results?\n• Distribution: up to 24 hours\n• Replies from crewing: 1-4 weeks\n\n❔ What documents do I need?\n• CV in PDF format\n• Specify position and vessel type\n\n❔ Are there guarantees?\n• We guarantee email delivery to all companies\n• Employment depends on crewing companies and your qualifications",
   "button_back_to_menu": "🔙 Back to menu",
 
+  "support_message": "💬 CUSTOMER SUPPORT\n\nHave questions? Contact us:\n\n• Telegram support group\n• We respond within 24 hours\n• Support in Russian, English, Ukrainian\n\nOr message the bot - admin will see your message.",
+  "button_open_support": "💬 Open support",
+
   "payment_invoice_title": "CV Distribution",
   "payment_invoice_description": "Professional CV distribution service to crewing companies",
   "payment_test_mode_skip": "⚠️ Test mode: payment skipped.",
