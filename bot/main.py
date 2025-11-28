@@ -694,8 +694,10 @@ async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         [InlineKeyboardButton(t(context, 'button_pay'), callback_data='pay')]
     ])
 
-    await query.message.reply_text(
-        t(context, 'start_apply_offer'),
+    # КРИТИЧНО: используем edit_message_text чтобы редактировать текущее сообщение
+    # а не создавать новое (иначе ConversationHandler теряет контекст!)
+    await query.edit_message_text(
+        text=t(context, 'start_apply_offer'),
         reply_markup=keyboard
     )
 
@@ -739,7 +741,10 @@ async def cancel_offer_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.answer()
     logger.info(f"❌ Callback: {query.data} от пользователя {query.message.chat_id}")
 
-    await query.message.reply_text(t(context, 'cancel'))
+    # Используем edit_message_text для редактирования текущего сообщения
+    await query.edit_message_text(
+        text=t(context, 'cancel')
+    )
     return ConversationHandler.END
 
 async def check_admin_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
