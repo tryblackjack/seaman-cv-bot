@@ -576,7 +576,7 @@ async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(t(context, 'button_send_cv'), url=f'https://t.me/{bot_username}?start=apply'),
-            InlineKeyboardButton(t(context, 'button_vacancies'), url=f'https://t.me/{bot_username}?start=vacancies')
+            InlineKeyboardButton(t(context, 'button_vacancies'), url='https://t.me/OnlyOffshore')  # Прямая ссылка на канал
         ],
         [
             InlineKeyboardButton(t(context, 'button_my_resume'), url=f'https://t.me/{bot_username}?start=resume'),
