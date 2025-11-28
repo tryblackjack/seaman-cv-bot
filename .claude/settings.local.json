@@ -9,7 +9,9 @@
       "Bash(git commit:*)",
       "Bash(git add:*)",
       "Bash(test:*)",
-      "Bash(python -m pip:*)"
+      "Bash(python -m pip:*)",
+      "Bash(dir \"C:\\Users\\trybl\\OneDrive\\Projects\\Seaman_job\" /B)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
