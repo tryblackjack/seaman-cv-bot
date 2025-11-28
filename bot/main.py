@@ -260,6 +260,13 @@ async def analyze_cv_and_preferences(cv_text, user_preferences):
 async def perform_mass_apply(user_id, context, user_data):
     """Выполняет массовую рассылку CV"""
     try:
+        # Проверка админского доступа
+        if user_data.get('is_admin'):
+            logger.warning("=" * 60)
+            logger.warning("⚠️ АДМИНСКАЯ РАССЫЛКА (БЕЗ ОПЛАТЫ)")
+            logger.warning(f"👤 User ID: {user_id}")
+            logger.warning("=" * 60)
+
         # ПРАВИЛЬНЫЙ порядок сообщений
         await context.bot.send_message(user_id, t(context, 'ai_analyzing'))
         await context.bot.send_message(user_id, t(context, 'processing_start'))
@@ -723,6 +730,39 @@ async def cancel_offer_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.message.reply_text(t(context, 'cancel'))
     return ConversationHandler.END
 
+async def check_admin_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Проверка админ кода для пропуска оплаты"""
+    text = update.message.text.strip()
+    user_id = update.effective_user.id
+
+    if text == settings.ADMIN_PASSPHRASE:
+        # Админ код верный - пропускаем оплату
+        context.user_data['payment_status'] = 'admin_bypass'
+        context.user_data['is_admin'] = True
+
+        logger.warning("=" * 60)
+        logger.warning("🔑 АДМИН КОД ИСПОЛЬЗОВАН")
+        logger.warning(f"👤 User ID: {user_id}")
+        logger.warning(f"🔐 Passphrase: {text}")
+        logger.warning("⚠️ ОПЛАТА ПРОПУЩЕНА")
+        logger.warning("=" * 60)
+
+        await update.message.reply_text(
+            "✅ Админ доступ подтверждён\n"
+            "⚠️ Оплата пропущена\n\n"
+            "📧 Введите Email соискателя:"
+        )
+
+        return EMAIL
+    else:
+        # Неверный код - показываем сообщение об оплате снова
+        await update.message.reply_text(
+            "❓ Для продолжения нажмите кнопку оплаты.\n\n"
+            "Если у вас есть админ код, введите его."
+        )
+        return PAYMENT
+
+
 async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик оплаты"""
     query = update.callback_query
@@ -731,10 +771,13 @@ async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Показываем инструкцию в зависимости от режима
     if settings.TEST_MODE:
-        test_payment_instruction = """🧪 <b>ТЕСТОВАЯ ОПЛАТА</b>
+        test_payment_instruction = """🧪 <b>ТЕСТОВЫЙ РЕЖИМ</b>
 
-Используйте тестовую карту:
+Для продолжения:
+• Оплатите тестовой картой
+• Или введите админ код
 
+<b>Тестовая карта:</b>
 💳 <b>Номер:</b> <code>4444 3333 2222 1111</code>
 📅 <b>Срок:</b> <code>01/29</code>
 🔐 <b>CVV:</b> <code>111</code>
@@ -1024,7 +1067,8 @@ def main():
             ],
             PAYMENT: [
                 CallbackQueryHandler(pay_handler, pattern='^pay$'),
-                MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment)
+                MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, check_admin_code)  # Проверка админ кода
             ],
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_email)],
             UPLOAD: [MessageHandler(filters.Document.ALL, save_cv)],
