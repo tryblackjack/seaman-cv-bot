@@ -676,7 +676,14 @@ async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Обработчик согласия с условиями"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"✅ Callback: {query.data} от пользователя {query.message.chat_id}")
+    user_id = query.from_user.id
+
+    logger.info("=" * 60)
+    logger.info("✅ ПОЛЬЗОВАТЕЛЬ СОГЛАСИЛСЯ С ОФЕРТОЙ")
+    logger.info(f"👤 User ID: {user_id}")
+    logger.info(f"📋 Callback data: {query.data}")
+    logger.info(f"➡️  Переход к состоянию: PAYMENT")
+    logger.info("=" * 60)
 
     # Показываем кнопку оплаты
     keyboard = InlineKeyboardMarkup([
@@ -687,6 +694,7 @@ async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         t(context, 'start_apply_offer'),
         reply_markup=keyboard
     )
+
     return PAYMENT
 
 async def read_full_offer_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
