@@ -18,7 +18,9 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    LabeledPrice
+    LabeledPrice,
+    BotCommand,
+    MenuButtonCommands
 )
 from telegram.ext import (
     Application,
@@ -779,6 +781,118 @@ async def precheckout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.pre_checkout_query.answer(ok=True)
 
 # =================================================================
+# COMMAND HANDLERS (для работы в десктопе и через slash commands)
+# =================================================================
+
+async def vacancies_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /vacancies"""
+    logger.info(f"💼 /vacancies от пользователя {update.message.chat_id}")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(t(context, 'button_open_vacancies_channel'), url='https://t.me/OnlyOffshore')]
+    ])
+    await update.message.reply_text(
+        t(context, 'vacancies_message'),
+        reply_markup=keyboard
+    )
+
+async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /resume"""
+    logger.info(f"📝 /resume от пользователя {update.message.chat_id}")
+    cv_message_id = context.user_data.get('cv_message_id')
+
+    if cv_message_id:
+        cv_filename = context.user_data.get('cv_filename', 'unknown.pdf')
+        cv_upload_date = context.user_data.get('cv_upload_date', datetime.now())
+        upload_date_str = cv_upload_date.strftime('%d.%m.%Y %H:%M')
+
+        chat_id = abs(update.message.chat_id)
+        cv_url = f"https://t.me/c/{chat_id}/{cv_message_id}"
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(t(context, 'button_open_cv'), url=cv_url)],
+            [InlineKeyboardButton(t(context, 'button_upload_new_cv'), callback_data='start_apply')]
+        ])
+
+        await update.message.reply_text(
+            t(context, 'my_resume_with_cv', cv_filename=cv_filename, upload_date=upload_date_str),
+            reply_markup=keyboard
+        )
+    else:
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(t(context, 'button_send_cv'), callback_data='start_apply')]
+        ])
+
+        await update.message.reply_text(
+            t(context, 'my_resume_no_cv'),
+            reply_markup=keyboard
+        )
+
+async def pricing_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /pricing"""
+    logger.info(f"💰 /pricing от пользователя {update.message.chat_id}")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(t(context, 'button_back_to_menu'), callback_data='back_to_menu')]
+    ])
+    await update.message.reply_text(
+        t(context, 'pricing_message'),
+        reply_markup=keyboard
+    )
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /help"""
+    logger.info(f"ℹ️ /help от пользователя {update.message.chat_id}")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(t(context, 'button_back_to_menu'), callback_data='back_to_menu')]
+    ])
+    await update.message.reply_text(
+        t(context, 'help_faq'),
+        reply_markup=keyboard
+    )
+
+async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /support"""
+    logger.info(f"📞 /support от пользователя {update.message.chat_id}")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(t(context, 'button_open_support'), url='https://t.me/SUPPORT_GROUP')],
+        [InlineKeyboardButton(t(context, 'button_back_to_menu'), callback_data='back_to_menu')]
+    ])
+    await update.message.reply_text(
+        t(context, 'support_message'),
+        reply_markup=keyboard
+    )
+
+# =================================================================
+# MENU BUTTON & COMMANDS SETUP
+# =================================================================
+
+async def post_init(application: Application):
+    """Настройка Menu Button и команд бота после инициализации"""
+    try:
+        # Устанавливаем команды бота
+        commands = [
+            BotCommand("start", "🏠 Главное меню"),
+            BotCommand("apply", "🚀 Разослать CV"),
+            BotCommand("vacancies", "💼 Вакансии"),
+            BotCommand("resume", "📝 Мое резюме"),
+            BotCommand("pricing", "💰 Тарифы"),
+            BotCommand("help", "ℹ️ Помощь"),
+            BotCommand("support", "📞 Поддержка"),
+            BotCommand("language", "🌍 Сменить язык"),
+        ]
+
+        await application.bot.set_my_commands(commands)
+        logger.info("✅ Команды бота установлены")
+
+        # Устанавливаем Menu Button (кнопка "Меню" слева внизу)
+        await application.bot.set_chat_menu_button(
+            menu_button=MenuButtonCommands()
+        )
+        logger.info("✅ Menu Button установлен")
+
+    except Exception as e:
+        logger.warning(f"⚠️ Ошибка настройки Menu Button/Commands: {e}")
+
+# =================================================================
 # MAIN
 # =================================================================
 
@@ -796,7 +910,7 @@ def main():
 
     logger.info(f"📊 База данных: {db_manager.count()} компаний")
 
-    app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).post_init(post_init).build()
 
     # Conversation Handler
     conv = ConversationHandler(
@@ -826,6 +940,15 @@ def main():
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('language', language_command))
     app.add_handler(CommandHandler('publish_menu', publish_menu))
+
+    # Command handlers для работы в десктопе и через меню команд
+    app.add_handler(CommandHandler('apply', start_apply))
+    app.add_handler(CommandHandler('vacancies', vacancies_command))
+    app.add_handler(CommandHandler('resume', resume_command))
+    app.add_handler(CommandHandler('pricing', pricing_command))
+    app.add_handler(CommandHandler('help', help_command))
+    app.add_handler(CommandHandler('support', support_command))
+
     app.add_handler(CallbackQueryHandler(language_callback, pattern='^(change_language|lang_)'))
     app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(vacancies|my_resume|pricing|help|support|back_to_menu)$'))
     app.add_handler(conv)
