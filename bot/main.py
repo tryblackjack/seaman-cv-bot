@@ -729,18 +729,25 @@ async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     logger.info(f"💳 Callback: {query.data} от пользователя {query.message.chat_id}")
 
-    # Показываем инструкцию по тестовой оплате
-    test_payment_instruction = """🧪 <b>ТЕСТОВАЯ ОПЛАТА</b>
+    # Показываем инструкцию в зависимости от режима
+    if settings.TEST_MODE:
+        test_payment_instruction = """🧪 <b>ТЕСТОВАЯ ОПЛАТА</b>
 
-Используйте тестовую карту для оплаты:
+Используйте тестовую карту:
 
-💳 <b>Номер карты:</b> <code>4242 4242 4242 4242</code>
-🔒 <b>CVV:</b> <code>111</code>
-📅 <b>Дата:</b> <code>12/29</code>
+💳 <b>Номер:</b> <code>4444 3333 2222 1111</code>
+📅 <b>Срок:</b> <code>01/29</code>
+🔐 <b>CVV:</b> <code>111</code>
+
+⚠️ Деньги НЕ будут списаны!
 
 Сейчас откроется форма оплаты Telegram."""
-
-    await query.message.reply_text(test_payment_instruction, parse_mode='HTML')
+        await query.message.reply_text(test_payment_instruction, parse_mode='HTML')
+    else:
+        await query.message.reply_text(
+            "💳 Сейчас откроется форма оплаты.\n\n"
+            "Стоимость: 50 EUR"
+        )
 
     try:
         await context.bot.send_invoice(
@@ -755,15 +762,54 @@ async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return PAYMENT
     except Exception as e:
         logger.error(f"❌ Ошибка send_invoice: {e}")
-        await query.message.reply_text(f"❌ Ошибка создания платежа: {e}\n\nПропускаем оплату...")
-        await query.message.reply_text(t(context, 'enter_email'), parse_mode='Markdown')
-        return EMAIL
+        await query.message.reply_text(
+            f"❌ Ошибка создания платежа\n\n"
+            f"Возможные причины:\n"
+            f"• Проблемы с платежным провайдером\n"
+            f"• Неверный PAYMENT_PROVIDER_TOKEN\n\n"
+            f"Технические детали: {str(e)[:100]}"
+        )
+        # Не пропускаем оплату при ошибке создания invoice
+        return PAYMENT
+
+async def precheckout(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик pre-checkout query (перед оплатой)"""
+    query = update.pre_checkout_query
+    user_id = query.from_user.id
+
+    # Telegram требует ответ на pre-checkout query
+    # Всегда подтверждаем (ok=True)
+    await query.answer(ok=True)
+
+    logger.info(f"✅ Pre-checkout OK для пользователя {user_id}")
+    logger.info(f"💰 Сумма: {query.total_amount} {query.currency}")
+    logger.info(f"📦 Invoice payload: {query.invoice_payload}")
+
 
 async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик успешной оплаты"""
-    logger.info(f"✅ Успешная оплата от {update.message.chat_id}")
-    await update.message.reply_text(t(context, 'payment_success'))
-    await update.message.reply_text(t(context, 'enter_email'), parse_mode='Markdown')
+    payment = update.message.successful_payment
+    user_id = update.effective_user.id
+
+    # Сохраняем данные об оплате
+    context.user_data['payment_status'] = 'paid'
+    context.user_data['payment_id'] = payment.telegram_payment_charge_id
+    context.user_data['payment_amount'] = payment.total_amount
+    context.user_data['payment_currency'] = payment.currency
+
+    logger.info("=" * 60)
+    logger.info("💰 УСПЕШНАЯ ОПЛАТА")
+    logger.info(f"👤 User ID: {user_id}")
+    logger.info(f"💵 Сумма: {payment.total_amount} {payment.currency}")
+    logger.info(f"🔖 Payment ID: {payment.telegram_payment_charge_id}")
+    logger.info(f"🆔 Provider Charge ID: {payment.provider_payment_charge_id}")
+    logger.info("=" * 60)
+
+    await update.message.reply_text(
+        "✅ Оплата успешна!\n\n"
+        "📧 Введите ваш Email (на него крюинги будут отвечать):"
+    )
+
     return EMAIL
 
 async def save_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -821,10 +867,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"🛑 Отмена от {update.message.chat_id}")
     await update.message.reply_text(t(context, 'cancel'))
     return ConversationHandler.END
-
-async def precheckout(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик pre-checkout"""
-    await update.pre_checkout_query.answer(ok=True)
 
 # =================================================================
 # COMMAND HANDLERS (для работы в десктопе и через slash commands)
