@@ -9,6 +9,7 @@ import sys
 import asyncio
 import logging
 import aiohttp
+from datetime import datetime
 
 # Добавляем путь к родительской директории для импорта config
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -441,7 +442,41 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=keyboard
         )
     elif query.data == 'my_resume':
-        await query.message.reply_text("📝 Функция управления резюме в разработке\n\nСкоро вы сможете сохранять и редактировать свои резюме!")
+        # Кнопка "📝 Мое резюме" - показываем информацию о CV или предлагаем загрузить
+        cv_message_id = context.user_data.get('cv_message_id')
+
+        if cv_message_id:
+            # CV загружено - показываем информацию с кнопками
+            cv_filename = context.user_data.get('cv_filename', 'unknown.pdf')
+            cv_upload_date = context.user_data.get('cv_upload_date', datetime.now())
+
+            # Форматируем дату
+            upload_date_str = cv_upload_date.strftime('%d.%m.%Y %H:%M')
+
+            # Формируем ссылку на сообщение с CV
+            # Для приватного чата используем abs(chat_id)
+            chat_id = abs(query.message.chat_id)
+            cv_url = f"https://t.me/c/{chat_id}/{cv_message_id}"
+
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(t(context, 'button_open_cv'), url=cv_url)],
+                [InlineKeyboardButton(t(context, 'button_upload_new_cv'), callback_data='start_apply')]
+            ])
+
+            await query.message.reply_text(
+                t(context, 'my_resume_with_cv', cv_filename=cv_filename, upload_date=upload_date_str),
+                reply_markup=keyboard
+            )
+        else:
+            # CV не загружено - предлагаем начать процесс рассылки
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(t(context, 'button_send_cv'), callback_data='start_apply')]
+            ])
+
+            await query.message.reply_text(
+                t(context, 'my_resume_no_cv'),
+                reply_markup=keyboard
+            )
     elif query.data == 'pricing':
         await query.message.reply_text("💰 <b>Тарифы</b>\n\n🚀 Рассылка CV: 50 EUR\n📧 1583 крюинговых компаний\n🤖 AI персонализация\n⚡ До 24 часов", parse_mode='HTML')
     elif query.data == 'help':
@@ -678,6 +713,12 @@ async def save_cv(update: Update, context: ContextTypes.DEFAULT_TYPE):
     path = os.path.join(settings.TEMP_DIR, f"{update.message.chat_id}_{doc.file_name}")
     await f.download_to_drive(path)
     context.user_data['cv_path'] = path
+
+    # Сохраняем дополнительные данные для кнопки "Мое резюме"
+    context.user_data['cv_message_id'] = update.message.message_id
+    context.user_data['cv_filename'] = doc.file_name
+    context.user_data['cv_upload_date'] = datetime.now()
+
     logger.info(f"💾 CV сохранен: {path}")
 
     await update.message.reply_text(t(context, 'enter_job_title'))

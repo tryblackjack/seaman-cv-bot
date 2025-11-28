@@ -16,6 +16,11 @@
   "vacancies_message": "📋 ALL CURRENT VACANCIES IN OUR CHANNEL\n\nTo find a vacancy by position:\n1. Open the vacancies channel\n2. Click search 🔍 at the top\n3. Enter position (Chief Officer, AB, Cook, etc.)\n\nNew vacancies posted daily!\nSubscribe to stay updated!",
   "button_open_vacancies_channel": "📢 Open vacancies channel",
 
+  "my_resume_with_cv": "📄 Your resume: {cv_filename}\nUploaded: {upload_date}\n\nYou can open the CV or upload a new one.",
+  "my_resume_no_cv": "📄 You haven't uploaded a resume yet.\n\nClick '🚀 Send CV' to start the distribution process and upload your resume.",
+  "button_open_cv": "📎 Open CV",
+  "button_upload_new_cv": "📤 Upload new CV",
+
   "payment_invoice_title": "CV Distribution",
   "payment_invoice_description": "Professional CV distribution service to crewing companies",
   "payment_test_mode_skip": "⚠️ Test mode: payment skipped.",
