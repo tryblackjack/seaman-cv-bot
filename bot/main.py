@@ -601,7 +601,11 @@ async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message_id=sent_message.message_id,
             disable_notification=True
         )
-        logger.info(f"✅ Меню закреплено в чате {update.message.chat_id}")
+        logger.info("=" * 60)
+        logger.info("📌 МЕНЮ АВТОМАТИЧЕСКИ ЗАКРЕПЛЕНО")
+        logger.info(f"💬 Chat ID: {update.message.chat_id}")
+        logger.info(f"📨 Message ID: {sent_message.message_id}")
+        logger.info("=" * 60)
     except Exception as e:
         logger.warning(f"⚠️ Не удалось закрепить меню: {e}")
         logger.warning("Убедитесь что бот - администратор в канале с правами на закрепление сообщений")
