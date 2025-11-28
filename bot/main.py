@@ -674,12 +674,26 @@ async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
         parse_mode='HTML'
     )
+
+    logger.info("=" * 60)
+    logger.info("📍 start_apply ЗАВЕРШЁН")
+    logger.info(f"👤 User ID: {user_id}")
+    logger.info("➡️  Переход в состояние: OFFER")
+    logger.info("=" * 60)
+
     return OFFER
 
 async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик согласия с условиями"""
     query = update.callback_query
     await query.answer()
+
+    logger.info("🔔" * 30)
+    logger.info("🔔 CALLBACK ПОЛУЧЕН: agree_terms")
+    logger.info(f"👤 User ID: {query.from_user.id}")
+    logger.info(f"📋 Callback data: {query.data}")
+    logger.info("🔔" * 30)
+
     user_id = query.from_user.id
 
     logger.info("=" * 60)
@@ -707,7 +721,7 @@ async def read_full_offer_handler(update: Update, context: ContextTypes.DEFAULT_
     """Обработчик показа полного текста договора"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"📄 Callback: {query.data} от пользователя {query.message.chat_id}")
+    logger.info(f"📄 CALLBACK ПОЛУЧЕН: read_full_offer от {query.from_user.id}")
 
     # Показываем полный текст договора
     full_offer = t(context, 'offer_agreement_text')
@@ -928,6 +942,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(t(context, 'cancel'))
     return ConversationHandler.END
 
+async def unknown_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик неизвестных callback'ов для отладки"""
+    query = update.callback_query
+    await query.answer()
+    logger.warning("⚠️" * 30)
+    logger.warning(f"⚠️ НЕИЗВЕСТНЫЙ CALLBACK: {query.data}")
+    logger.warning(f"👤 User ID: {query.from_user.id}")
+    logger.warning(f"📨 Message ID: {query.message.message_id if query.message else 'N/A'}")
+    logger.warning("⚠️" * 30)
+
 # =================================================================
 # COMMAND HANDLERS (для работы в десктопе и через slash commands)
 # =================================================================
@@ -1099,7 +1123,10 @@ def main():
             ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_role)],
             PREF: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_pref)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)]
+        fallbacks=[
+            CommandHandler('cancel', cancel),
+            CallbackQueryHandler(unknown_callback_handler)  # Ловит все неизвестные callbacks для отладки
+        ]
     )
 
     # Handlers
