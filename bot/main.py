@@ -577,11 +577,23 @@ async def publish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
 
     # Публикуем красивый пост
-    await update.message.reply_text(
+    sent_message = await update.message.reply_text(
         t(context, 'channel_menu_post'),
         reply_markup=keyboard,
         parse_mode='HTML'
     )
+
+    # Автоматически закрепляем меню
+    try:
+        await context.bot.pin_chat_message(
+            chat_id=update.message.chat_id,
+            message_id=sent_message.message_id,
+            disable_notification=True
+        )
+        logger.info(f"✅ Меню закреплено в чате {update.message.chat_id}")
+    except Exception as e:
+        logger.warning(f"⚠️ Не удалось закрепить меню: {e}")
+        logger.warning("Убедитесь что бот - администратор в канале с правами на закрепление сообщений")
 
     logger.info(f"✅ Меню опубликовано пользователем {user_id} на языке {lang}")
 
