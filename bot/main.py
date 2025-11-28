@@ -432,7 +432,14 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     logger.info(f"📋 Callback: {query.data} от пользователя {query.message.chat_id}")
 
     if query.data == 'vacancies':
-        await query.message.reply_text("📋 Функция поиска вакансий в разработке\n\nСкоро здесь будут актуальные вакансии для моряков!")
+        # Кнопка "💼 Вакансии" - показываем информацию о канале с вакансиями
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(t(context, 'button_open_vacancies_channel'), url='https://t.me/OnlyOffshore')]
+        ])
+        await query.message.reply_text(
+            t(context, 'vacancies_message'),
+            reply_markup=keyboard
+        )
     elif query.data == 'my_resume':
         await query.message.reply_text("📝 Функция управления резюме в разработке\n\nСкоро вы сможете сохранять и редактировать свои резюме!")
     elif query.data == 'pricing':
