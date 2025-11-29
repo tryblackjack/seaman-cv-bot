@@ -44,6 +44,9 @@ except ImportError:
 from config import settings
 from bot.database_manager import DatabaseManager
 from bot.email_sender import EmailSender
+from bot.cv_analyzer import analyze_cv_with_ai
+from bot.ai_hybrid_letter import generate_hybrid_letter
+from bot.test_mailer import test_campaign
 
 # =================================================================
 # ЛОГИРОВАНИЕ
@@ -354,7 +357,7 @@ async def perform_mass_apply(user_id, context, user_data):
 # HANDLERS
 # =================================================================
 
-(OFFER, PAYMENT, EMAIL, UPLOAD, ROLE, PREF, LANGUAGE_SELECT) = range(7)
+(OFFER, PAYMENT, EMAIL, UPLOAD, CONFIRM_CV_DATA, ROLE, PREF, LANGUAGE_SELECT) = range(8)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /start с автоопределением языка и поддержкой deep links"""
@@ -895,7 +898,7 @@ async def save_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return UPLOAD
 
 async def save_cv(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Сохранение CV"""
+    """Сохранение CV и AI анализ"""
     doc = update.message.document
     if not doc or not doc.file_name.lower().endswith('.pdf'):
         await update.message.reply_text(t(context, 'upload_cv_error'))
@@ -914,7 +917,87 @@ async def save_cv(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     logger.info(f"💾 CV сохранен: {path}")
 
-    await update.message.reply_text(t(context, 'enter_job_title'))
+    # Показываем прогресс AI анализа
+    processing_msg = await update.message.reply_text(
+        "🤖 AI анализирует ваше CV...\n"
+        "Это займет 5-10 секунд."
+    )
+
+    # AI анализ
+    cv_data = analyze_cv_with_ai(path)
+
+    if cv_data:
+        # Сохраняем данные
+        context.user_data['cv_data'] = cv_data
+
+        # Показываем результат
+        await processing_msg.edit_text(
+            f"✅ CV успешно проанализировано!\n\n"
+            f"📋 Извлечённые данные:\n\n"
+            f"👤 Имя: {cv_data.get('full_name', 'Не указано')}\n"
+            f"🚢 Текущая должность: {cv_data.get('current_rank', 'Не указано')}\n"
+            f"🏢 Текущий крюинг: {cv_data.get('current_company', 'Не указано')}\n"
+            f"⭐ Желаемая должность: {cv_data.get('desired_rank', 'Не указано')}\n"
+            f"🚢 Тип судна: {cv_data.get('vessel_type', 'Не указано')}\n"
+            f"📅 Опыт: {cv_data.get('experience_years', 'Не указано')} лет\n"
+            f"📧 Email: {cv_data.get('email', 'Не указано')}\n"
+            f"📱 Телефон: {cv_data.get('phone', 'Не указано')}\n\n"
+            f"Данные верны?",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("✅ Да, всё верно", callback_data="cv_data_confirmed")],
+                [InlineKeyboardButton("✏️ Исправить вручную", callback_data="cv_data_edit")]
+            ])
+        )
+
+        return CONFIRM_CV_DATA
+    else:
+        # AI не смог проанализировать - fallback на старый режим
+        await processing_msg.edit_text(
+            "⚠️ Не удалось автоматически извлечь данные из CV.\n\n"
+            "Продолжаем в ручном режиме...\n\n"
+            "⚓ Какая у вас должность/ранг?\n\n"
+            "Пример: Chief Engineer, 2nd Officer, AB, Cook"
+        )
+        return ROLE
+
+async def confirm_cv_data_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик подтверждения данных CV"""
+    query = update.callback_query
+    await query.answer()
+
+    cv_data = context.user_data.get('cv_data')
+    cv_file_path = context.user_data.get('cv_path')
+
+    if not cv_data:
+        await query.edit_message_text("❌ Ошибка: данные CV не найдены")
+        return ConversationHandler.END
+
+    # Показываем информацию о начале тестовой рассылки
+    await query.edit_message_text(
+        "🎯 Начинаю подготовку рассылки...\n\n"
+        f"Будет обработано ~{db_manager.count()} крюинговых компаний\n"
+        f"(исключая ваш текущий крюинг: {cv_data.get('current_company', 'N/A')})\n\n"
+        "⚠️ ТЕСТОВЫЙ РЕЖИМ: письма НЕ будут отправлены\n"
+        "Только демонстрация работы AI генерации."
+    )
+
+    # Запускаем тестовую рассылку
+    await test_campaign(query.message, context, cv_data, cv_file_path, db_manager)
+
+    return ConversationHandler.END
+
+async def edit_cv_data_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик редактирования данных CV вручную"""
+    query = update.callback_query
+    await query.answer()
+
+    # Переходим в ручной режим ввода
+    await query.edit_message_text(
+        "✏️ Хорошо, введём данные вручную.\n\n"
+        "⚓ Какая у вас должность/ранг?\n\n"
+        "Пример: Chief Engineer, 2nd Officer, AB, Cook"
+    )
+
     return ROLE
 
 async def save_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1033,6 +1116,52 @@ async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard
     )
 
+async def test_letter_generation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Команда /test_letter для проверки AI генерации писем
+    Только для админа!
+    """
+    user_id = update.effective_user.id
+
+    # Проверка прав администратора
+    if settings.ADMIN_USER_IDS and user_id not in settings.ADMIN_USER_IDS:
+        await update.message.reply_text(
+            f"❌ У вас нет прав для выполнения этой команды\n\n"
+            f"Ваш ID: {user_id}\n"
+            f"Админы: {settings.ADMIN_USER_IDS}"
+        )
+        logger.warning(f"⚠️ Попытка использования /test_letter пользователем {user_id} (не админ)")
+        return
+
+    # Тестовые данные
+    test_cv = {
+        'full_name': 'Ivan Petrov',
+        'current_rank': '2nd Officer',
+        'current_company': 'ABC Shipping Ltd',
+        'desired_rank': 'Chief Officer',
+        'vessel_type': 'Container',
+        'experience_years': '8',
+        'email': 'ivan.petrov@example.com',
+        'phone': '+380991234567'
+    }
+
+    await update.message.reply_text("🧪 Генерирую 3 тестовых письма...")
+
+    # Генерируем 3 письма с разными шаблонами
+    for i in range(3):
+        letter = generate_hybrid_letter(test_cv, "Test Crewing Company Ltd")
+
+        ai_badge = "🤖 AI" if letter['used_ai'] else "📝 Template"
+
+        await update.message.reply_text(
+            f"📧 **Письмо #{i+1}** {ai_badge}\n\n"
+            f"**Тема:** {letter['subject']}\n\n"
+            f"**Текст:**\n{letter['body']}\n\n"
+            f"---\n"
+            f"Токены: ~{len(letter['body'].split()) * 1.3:.0f}",
+            parse_mode='Markdown'
+        )
+
 # =================================================================
 # MENU BUTTON & COMMANDS SETUP
 # =================================================================
@@ -1120,6 +1249,10 @@ def main():
             ],
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_email)],
             UPLOAD: [MessageHandler(filters.Document.ALL, save_cv)],
+            CONFIRM_CV_DATA: [
+                CallbackQueryHandler(confirm_cv_data_callback, pattern='^cv_data_confirmed$'),
+                CallbackQueryHandler(edit_cv_data_callback, pattern='^cv_data_edit$')
+            ],
             ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_role)],
             PREF: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_pref)],
         },
@@ -1144,6 +1277,7 @@ def main():
     app.add_handler(CommandHandler('pricing', pricing_command))
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('support', support_command))
+    app.add_handler(CommandHandler('test_letter', test_letter_generation))
 
     app.add_handler(CallbackQueryHandler(language_callback, pattern='^(change_language|lang_)'))
     app.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(vacancies|my_resume|pricing|help|support|back_to_menu)$'))
