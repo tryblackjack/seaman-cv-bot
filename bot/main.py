@@ -825,13 +825,13 @@ async def pay_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         await context.bot.send_invoice(
-            query.message.chat_id,
-            t(context, 'payment_invoice_title'),
-            t(context, 'payment_invoice_description'),
-            "payload",
-            settings.PAYMENT_PROVIDER_TOKEN,
-            "EUR",
-            [LabeledPrice("Service", 5000)]
+            chat_id=query.message.chat_id,
+            title=t(context, 'payment_invoice_title'),
+            description=t(context, 'payment_invoice_description'),
+            payload="cv_distribution_payment",
+            provider_token=settings.PAYMENT_PROVIDER_TOKEN,
+            currency="EUR",
+            prices=[LabeledPrice("Рассылка CV", 5000)]
         )
         return PAYMENT
     except Exception as e:
