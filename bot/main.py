@@ -1126,7 +1126,10 @@ def main():
         fallbacks=[
             CommandHandler('cancel', cancel),
             CallbackQueryHandler(unknown_callback_handler)  # Ловит все неизвестные callbacks для отладки
-        ]
+        ],
+        per_message=True,  # Необходимо для отслеживания callbacks от InlineKeyboardButton
+        per_chat=True,     # Привязка к чату
+        per_user=True      # Привязка к пользователю
     )
 
     # Handlers
