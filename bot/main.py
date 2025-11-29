@@ -672,6 +672,13 @@ async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton(t(context, 'cancel'), callback_data='cancel_offer')]
     ])
 
+    logger.info("🎯" * 50)
+    logger.info("🎯 СОЗДАНИЕ КНОПОК В start_apply:")
+    logger.info(f"🎯 Кнопка 1: '{t(context, 'button_agree_terms')}' → callback_data='agree_terms'")
+    logger.info(f"🎯 Кнопка 2: '{t(context, 'button_read_full')}' → callback_data='read_full_offer'")
+    logger.info(f"🎯 Кнопка 3: '{t(context, 'cancel')}' → callback_data='cancel_offer'")
+    logger.info("🎯" * 50)
+
     await message.reply_text(
         f"{t(context, 'offer_title')}\n\n{preview}",
         reply_markup=keyboard,
@@ -682,6 +689,7 @@ async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("📍 start_apply ЗАВЕРШЁН")
     logger.info(f"👤 User ID: {user_id}")
     logger.info("➡️  Переход в состояние: OFFER")
+    logger.info("⏳ ОЖИДАНИЕ CALLBACK ОТ ПОЛЬЗОВАТЕЛЯ...")
     logger.info("=" * 60)
 
     return OFFER
@@ -689,13 +697,19 @@ async def start_apply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def agree_terms_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик согласия с условиями"""
     query = update.callback_query
+
+    # КРИТИЧНО: Сначала отвечаем на callback
     await query.answer()
 
-    logger.info("🔔" * 30)
-    logger.info("🔔 CALLBACK ПОЛУЧЕН: agree_terms")
-    logger.info(f"👤 User ID: {query.from_user.id}")
-    logger.info(f"📋 Callback data: {query.data}")
-    logger.info("🔔" * 30)
+    # МАКСИМАЛЬНО ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ
+    logger.info("🔔" * 50)
+    logger.info("🔔🔔🔔 CALLBACK RECEIVED: agree_terms")
+    logger.info(f"🔔 User ID: {query.from_user.id}")
+    logger.info(f"🔔 Username: @{query.from_user.username if query.from_user.username else 'NO_USERNAME'}")
+    logger.info(f"🔔 Callback data: '{query.data}'")
+    logger.info(f"🔔 Message ID: {query.message.message_id if query.message else 'N/A'}")
+    logger.info(f"🔔 Chat ID: {query.message.chat_id if query.message else 'N/A'}")
+    logger.info("🔔" * 50)
 
     user_id = query.from_user.id
 
@@ -724,7 +738,12 @@ async def read_full_offer_handler(update: Update, context: ContextTypes.DEFAULT_
     """Обработчик показа полного текста договора"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"📄 CALLBACK ПОЛУЧЕН: read_full_offer от {query.from_user.id}")
+
+    logger.info("📄" * 50)
+    logger.info(f"📄📄📄 CALLBACK RECEIVED: read_full_offer")
+    logger.info(f"📄 User ID: {query.from_user.id}")
+    logger.info(f"📄 Callback data: '{query.data}'")
+    logger.info("📄" * 50)
 
     # Показываем полный текст договора
     full_offer = t(context, 'offer_agreement_text')
@@ -756,7 +775,12 @@ async def cancel_offer_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     """Обработчик отмены"""
     query = update.callback_query
     await query.answer()
-    logger.info(f"❌ Callback: {query.data} от пользователя {query.message.chat_id}")
+
+    logger.info("❌" * 50)
+    logger.info(f"❌❌❌ CALLBACK RECEIVED: cancel_offer")
+    logger.info(f"❌ User ID: {query.from_user.id}")
+    logger.info(f"❌ Callback data: '{query.data}'")
+    logger.info("❌" * 50)
 
     # Используем edit_message_text для редактирования текущего сообщения
     await query.edit_message_text(
@@ -1035,6 +1059,33 @@ async def unknown_callback_handler(update: Update, context: ContextTypes.DEFAULT
     logger.warning(f"📨 Message ID: {query.message.message_id if query.message else 'N/A'}")
     logger.warning("⚠️" * 30)
 
+async def debug_all_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """КРИТИЧЕСКИЙ DEBUG: ловит ВСЕ callback'ы которые не обработались"""
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+
+        logger.error("🚨" * 40)
+        logger.error("🚨 КРИТИЧНО: CALLBACK НЕ ОБРАБОТАН!")
+        logger.error(f"🚨 Callback data: '{query.data}'")
+        logger.error(f"🚨 User ID: {query.from_user.id}")
+        logger.error(f"🚨 Message ID: {query.message.message_id if query.message else 'N/A'}")
+        logger.error(f"🚨 Chat ID: {query.message.chat_id if query.message else 'N/A'}")
+        logger.error("🚨" * 40)
+
+        # Отправляем сообщение пользователю для отладки
+        try:
+            await query.message.reply_text(
+                f"🐛 DEBUG MODE 🐛\n\n"
+                f"❌ Callback '{query.data}' не обработан!\n"
+                f"Пожалуйста, отправьте скриншот админу.\n\n"
+                f"Технические детали:\n"
+                f"• Callback: {query.data}\n"
+                f"• User ID: {query.from_user.id}"
+            )
+        except Exception as e:
+            logger.error(f"🚨 Не удалось отправить debug сообщение: {e}")
+
 # =================================================================
 # COMMAND HANDLERS (для работы в десктопе и через slash commands)
 # =================================================================
@@ -1258,7 +1309,7 @@ def main():
         },
         fallbacks=[
             CommandHandler('cancel', cancel),
-            CallbackQueryHandler(unknown_callback_handler)  # Ловит все неизвестные callbacks для отладки
+            CallbackQueryHandler(debug_all_callbacks)  # КРИТИЧНО: Ловит ВСЕ необработанные callbacks!
         ],
         per_message=True,  # Необходимо для отслеживания callbacks от InlineKeyboardButton
         per_chat=True,     # Привязка к чату
