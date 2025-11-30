@@ -1311,7 +1311,6 @@ def main():
             CommandHandler('cancel', cancel),
             CallbackQueryHandler(debug_all_callbacks)  # КРИТИЧНО: Ловит ВСЕ необработанные callbacks!
         ],
-        per_message=True,  # Необходимо для отслеживания callbacks от InlineKeyboardButton
         per_chat=True,     # Привязка к чату
         per_user=True      # Привязка к пользователю
     )
